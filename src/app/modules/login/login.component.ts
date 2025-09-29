@@ -1,75 +1,116 @@
-import { Component, OnInit, Injector } from '@angular/core';
-import { Validators } from '@angular/forms';
-import { MessageService, ConfirmationService } from 'primeng/api';
-import { ToastComponent } from '../../shared/components/toast/toast.component';
-import { FormularioComun } from '../../shared/components/form/formulario-comun';
-import { FORM_SHARED_IMPORTS } from '../../shared/components/form/form_imports';
+import { Component, inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
+import { ToastModule } from 'primeng/toast';
+import { AuthService } from '../../core/services/auth.service';
+import { MessageService } from 'primeng/api';
+import { LoginRequest } from '../../core/models/auth.model';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [
-    ...FORM_SHARED_IMPORTS, // imports genéricos de clases
-    ToastComponent
-  ],
-  providers: [MessageService, ConfirmationService],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, ToastModule],
+  providers: [MessageService],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.css'
+  styleUrls: ['./login.component.css']
 })
-export class LoginComponent extends FormularioComun implements OnInit {
-  isLoading = false;
+export class LoginComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private authService = inject(AuthService);
+  private messageService = inject(MessageService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
-  constructor(injector: Injector) {
-    super(injector);
+  loginForm: FormGroup;
+  isLoading = false;
+  showPassword = false;
+
+  constructor() {
+    this.loginForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]]
+    });
   }
 
   ngOnInit(): void {
-    this.registraControl();
-  }
-
-  override registraControl(): void {
-    this.form = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      rememberMe: [false]
+    // Verificar si viene del registro exitoso
+    this.route.queryParams.subscribe(params => {
+      if (params['registered'] === 'true') {
+        this.messageService.add({
+          severity: 'success',
+          summary: '¡Cuenta creada exitosamente!',
+          detail: 'Tu cuenta ha sido creada correctamente. Ya puedes iniciar sesión con tus credenciales.',
+          life: 6000
+        });
+        
+        // Pre-llenar el email si viene del registro
+        if (params['email']) {
+          this.loginForm.patchValue({ email: params['email'] });
+        }
+        
+        // Limpiar los query parameters de la URL
+        this.router.navigate([], {
+          queryParams: {},
+          replaceUrl: true
+        });
+      }
     });
   }
 
-  override async onSubmit(): Promise<void> {
-    if (this.form.valid) {
+  onSubmit(): void {
+    if (this.loginForm.valid && !this.isLoading) {
       this.isLoading = true;
       
-      // Simular llamada al API por ahora
-      setTimeout(() => {
-        this.isLoading = false;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Inicio de sesión exitoso'
-        });
-        // Redirigir al dashboard o página principal
-        setTimeout(() => {
-          this.router.navigate(['/dashboard']);
-        }, 1500);
-      }, 1500);
-    } else {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Por favor, complete todos los campos requeridos'
+      const credentials: LoginRequest = {
+        email: this.loginForm.get('email')?.value,
+        password: this.loginForm.get('password')?.value
+      };
+
+      this.authService.login(credentials).subscribe({
+        next: (response) => {
+          this.messageService.add({
+            severity: 'success',
+            summary: '¡Bienvenido!',
+            detail: 'Has iniciado sesión correctamente',
+            life: 3000
+          });
+          // La navegación se maneja automáticamente en el AuthService
+        },
+        error: (error) => {
+          this.isLoading = false;
+          console.error('Error de login:', error);
+          // Los errores se manejan automáticamente por el error interceptor
+        },
+        complete: () => {
+          this.isLoading = false;
+        }
       });
+    } else {
+      this.markFormGroupTouched();
     }
   }
 
-  onRegister() {
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  goToRegister(): void {
     this.router.navigate(['/register']);
   }
 
-  onSocialLogin(provider: string) {
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Información',
-      detail: `Login con ${provider} en desarrollo`
+  onRegister(): void {
+    this.router.navigate(['/register']);
+  }
+
+  private markFormGroupTouched(): void {
+    Object.keys(this.loginForm.controls).forEach(key => {
+      const control = this.loginForm.get(key);
+      control?.markAsTouched();
     });
   }
+
+  // Getters para fácil acceso en el template
+  get email() { return this.loginForm.get('email'); }
+  get password() { return this.loginForm.get('password'); }
 }

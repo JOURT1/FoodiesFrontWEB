@@ -21,21 +21,28 @@ export class DashboardUsuariosComponent implements OnInit {
       nombre: 'Macchiata',
       tipo: 'BRUNCH - PIZZA - PASTA',
       ubicacion: 'La Primavera I en Cumbayá, Ecuador',
-      imagen: '/img/Login.webp'
+      imagen: '/img/Restaurantes/Macchiata.png'
     },
     {
       id: 2,
       nombre: "Michael's",
       tipo: 'GRILL',
       ubicacion: 'Quito, Guayaquil',
-      imagen: '/img/Login.webp'
+      imagen: '/img/Restaurantes/Michaels.png'
     },
     {
       id: 3,
       nombre: 'Roll It',
       tipo: 'SUSHI',
       ubicacion: 'Quito, Cumbayá',
-      imagen: '/img/Login.webp'
+      imagen: '/img/Restaurantes/RollIt.png'
+    },
+    {
+      id: 4,
+      nombre: 'The Viet Station',
+      tipo: 'COMIDA VIETNAMITA',
+      ubicacion: 'Quito, La Floresta',
+      imagen: '/img/Restaurantes/The Viet Station.png'
     }
   ];
   
