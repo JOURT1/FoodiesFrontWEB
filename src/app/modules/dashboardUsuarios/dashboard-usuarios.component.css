@@ -8,7 +8,7 @@
 .hero-section {
   background: linear-gradient(135deg, rgba(254, 57, 94, 0.1) 0%, rgba(254, 57, 94, 0.05) 100%);
   border-radius: 20px;
-  padding: 3rem 2rem;
+  padding: 0.5rem 2rem;
   text-align: center;
   margin-bottom: 2rem;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
@@ -305,7 +305,7 @@
 
 @media (max-width: 480px) {
   .hero-section {
-    padding: 2rem 1rem;
+    padding: 1rem 5rem;
   }
   
   .search-container,
