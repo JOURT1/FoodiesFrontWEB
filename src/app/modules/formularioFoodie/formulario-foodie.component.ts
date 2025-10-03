@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
-import { FoodieApplicationModel } from '../../core/models/foodie-application.model';
+import { FormularioFoodieService } from '../../core/services/formulario-foodie.service';
+import { FormularioFoodieCreate, FormularioFoodieUpdate } from '../../core/models/formulario-foodie.model';
 
 @Component({
   selector: 'app-formulario-foodie',
@@ -17,10 +18,13 @@ export class FormularioFoodieComponent implements OnInit {
   
   foodieForm!: FormGroup;
   isSaving = false;
+  isEditing = false;
+  formularioId?: number;
 
   constructor(
     private formBuilder: FormBuilder,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private formularioFoodieService: FormularioFoodieService
   ) {}
   
   // Opciones para los selectores
@@ -59,6 +63,49 @@ export class FormularioFoodieComponent implements OnInit {
   ngOnInit(): void {
     console.log('FormularioFoodieComponent inicializado');
     this.inicializarFormulario();
+    this.verificarFormularioExistente();
+  }
+
+  private async verificarFormularioExistente(): Promise<void> {
+    try {
+      const formulario = await this.formularioFoodieService.getMyFormulario().toPromise();
+      if (formulario) {
+        this.isEditing = true;
+        this.formularioId = formulario.id;
+        this.cargarDatosFormulario(formulario);
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Información',
+          detail: 'Ya tienes un formulario registrado. Puedes actualizarlo.',
+          life: 5000
+        });
+      }
+    } catch (error: any) {
+      if (error.status !== 404) {
+        console.error('Error al verificar formulario existente:', error);
+      }
+    }
+  }
+
+  private cargarDatosFormulario(formulario: any): void {
+    this.foodieForm.patchValue({
+      nombreCompleto: formulario.nombreCompleto,
+      email: formulario.email,
+      numeroPersonal: formulario.numeroPersonal,
+      fechaNacimiento: new Date(formulario.fechaNacimiento),
+      genero: formulario.genero,
+      pais: formulario.pais,
+      ciudad: formulario.ciudad,
+      frecuenciaContenido: formulario.frecuenciaContenido,
+      usuarioInstagram: formulario.usuarioInstagram,
+      seguidoresInstagram: formulario.seguidoresInstagram.toString(),
+      cuentaPublica: formulario.cuentaPublica,
+      usuarioTikTok: formulario.usuarioTikTok,
+      seguidoresTikTok: formulario.seguidoresTikTok.toString(),
+      sobreTi: formulario.sobreTi,
+      aceptaBeneficios: formulario.aceptaBeneficios,
+      aceptaTerminos: formulario.aceptaTerminos
+    });
   }
 
   private inicializarFormulario(): void {
@@ -92,9 +139,17 @@ export class FormularioFoodieComponent implements OnInit {
   async onSubmit(): Promise<void> {
     if (this.foodieForm.valid) {
       this.isSaving = true;
-      const formData: FoodieApplicationModel = this.buildApplicationModel();
-      await this.procesarSolicitud(formData);
-      this.isSaving = false;
+      try {
+        if (this.isEditing) {
+          await this.actualizarFormulario();
+        } else {
+          await this.crearFormulario();
+        }
+      } catch (error) {
+        console.error('Error al procesar formulario:', error);
+      } finally {
+        this.isSaving = false;
+      }
     } else {
       this.marcarCamposInvalidos();
       this.messageService.add({
@@ -106,7 +161,93 @@ export class FormularioFoodieComponent implements OnInit {
     }
   }
 
-  private buildApplicationModel(): FoodieApplicationModel {
+  private async crearFormulario(): Promise<void> {
+    const formData: FormularioFoodieCreate = this.buildCreateModel();
+    
+    this.formularioFoodieService.create(formData).subscribe({
+      next: (response) => {
+        // Mensaje principal de éxito
+        this.messageService.add({
+          severity: 'success',
+          summary: '🎉 ¡Formulario Enviado Exitosamente!',
+          detail: 'Tu aplicación para ser Foodie ha sido registrada correctamente. Te contactaremos pronto.',
+          life: 8000
+        });
+        
+        this.isEditing = true;
+        this.formularioId = response.id;
+        
+        // Verificar si cumple requisitos para rol foodie
+        if (response.seguidoresInstagram >= 1000 || response.seguidoresTikTok >= 1000) {
+          setTimeout(() => {
+            this.messageService.add({
+              severity: 'success',
+              summary: '🌟 ¡Felicitaciones, eres Foodie!',
+              detail: `¡Increíble! Con ${response.seguidoresInstagram} seguidores en Instagram y ${response.seguidoresTikTok} en TikTok, has obtenido automáticamente el rol de Foodie. ¡Disfruta de todos los beneficios!`,
+              life: 10000
+            });
+          }, 1500);
+        } else {
+          setTimeout(() => {
+            this.messageService.add({
+              severity: 'info',
+              summary: '📈 Sigue creciendo',
+              detail: 'Necesitas al menos 1,000 seguidores en Instagram o TikTok para obtener el rol Foodie automáticamente. ¡Sigue creando contenido increíble!',
+              life: 7000
+            });
+          }, 1500);
+        }
+      },
+      error: (error) => {
+        console.error('Error al crear formulario:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error al enviar',
+          detail: 'Hubo un problema al enviar tu formulario. Por favor, inténtalo nuevamente.',
+          life: 6000
+        });
+      }
+    });
+  }
+
+  private async actualizarFormulario(): Promise<void> {
+    const formData: FormularioFoodieUpdate = this.buildUpdateModel();
+    
+    this.formularioFoodieService.updateMyFormulario(formData).subscribe({
+      next: (response) => {
+        // Mensaje principal de actualización
+        this.messageService.add({
+          severity: 'success',
+          summary: '✅ Información Actualizada',
+          detail: 'Tus datos han sido actualizados correctamente. Gracias por mantenerte al día.',
+          life: 6000
+        });
+        
+        // Verificar si ahora cumple requisitos para rol foodie
+        if (response.seguidoresInstagram >= 1000 || response.seguidoresTikTok >= 1000) {
+          setTimeout(() => {
+            this.messageService.add({
+              severity: 'success',
+              summary: '🎊 ¡Ahora eres Foodie!',
+              detail: `¡Genial! Con tus nuevos números de seguidores (${response.seguidoresInstagram} en Instagram, ${response.seguidoresTikTok} en TikTok), ahora tienes el rol Foodie. ¡Disfruta de los beneficios!`,
+              life: 9000
+            });
+          }, 1000);
+        }
+      },
+      error: (error) => {
+        console.error('Error al actualizar formulario:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error al actualizar',
+          detail: 'Hubo un problema al actualizar tu información. Por favor, inténtalo nuevamente.',
+          life: 6000
+        });
+      }
+    });
+  }
+
+  private buildCreateModel(): FormularioFoodieCreate {
     const formValue = this.foodieForm.value;
     
     return {
@@ -125,21 +266,31 @@ export class FormularioFoodieComponent implements OnInit {
       seguidoresTikTok: parseInt(formValue.seguidoresTikTok),
       sobreTi: formValue.sobreTi.trim(),
       aceptaBeneficios: formValue.aceptaBeneficios,
-      aceptaTerminos: formValue.aceptaTerminos,
-      fechaAplicacion: new Date()
+      aceptaTerminos: formValue.aceptaTerminos
     };
   }
 
-  private async procesarSolicitud(formData: FoodieApplicationModel): Promise<void> {
-    // TODO: Implementar envío de datos al backend
-    console.log('Solicitud de Foodie:', formData);
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Éxito',
-      detail: '¡Solicitud enviada exitosamente! Te contactaremos pronto.',
-      life: 6000
-    });
-    this.resetearFormulario();
+  private buildUpdateModel(): FormularioFoodieUpdate {
+    const formValue = this.foodieForm.value;
+    
+    return {
+      nombreCompleto: formValue.nombreCompleto.trim(),
+      email: formValue.email.toLowerCase().trim(),
+      numeroPersonal: formValue.numeroPersonal,
+      fechaNacimiento: new Date(formValue.fechaNacimiento),
+      genero: formValue.genero,
+      pais: formValue.pais,
+      ciudad: formValue.ciudad,
+      frecuenciaContenido: formValue.frecuenciaContenido,
+      usuarioInstagram: formValue.usuarioInstagram.trim(),
+      seguidoresInstagram: parseInt(formValue.seguidoresInstagram),
+      cuentaPublica: formValue.cuentaPublica,
+      usuarioTikTok: formValue.usuarioTikTok.trim(),
+      seguidoresTikTok: parseInt(formValue.seguidoresTikTok),
+      sobreTi: formValue.sobreTi.trim(),
+      aceptaBeneficios: formValue.aceptaBeneficios,
+      aceptaTerminos: formValue.aceptaTerminos
+    };
   }
 
   private marcarCamposInvalidos(): void {
@@ -149,11 +300,6 @@ export class FormularioFoodieComponent implements OnInit {
         control.markAsTouched();
       }
     });
-  }
-
-  private resetearFormulario(): void {
-    this.foodieForm.reset();
-    this.inicializarFormulario();
   }
 
   // Getters para validaciones en el template

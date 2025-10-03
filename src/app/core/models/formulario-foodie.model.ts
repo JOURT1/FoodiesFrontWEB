@@ -1,37 +1,34 @@
-export interface FoodieApplicationModel {
-  // Información personal
+export interface FormularioFoodie {
+  id?: number;
+  usuarioId?: number;
   nombreCompleto: string;
   email: string;
   numeroPersonal: string;
   fechaNacimiento: Date;
   genero: string;
-  
-  // Ubicación
   pais: string;
   ciudad: string;
-  
-  // Redes sociales
   frecuenciaContenido: string;
   usuarioInstagram: string;
   seguidoresInstagram: number;
   cuentaPublica: boolean;
   usuarioTikTok: string;
   seguidoresTikTok: number;
-  
-  // Descripción y términos
   sobreTi: string;
   aceptaBeneficios: string;
   aceptaTerminos: boolean;
-  
-  // Metadatos
-  fechaAplicacion: Date;
+  fechaAplicacion?: Date;
+  fechaActualizacion?: Date;
+  estado?: string;
+  comentarios?: string;
+  activo?: boolean;
 }
 
-export interface FoodieApplicationRequest {
+export interface FormularioFoodieCreate {
   nombreCompleto: string;
   email: string;
   numeroPersonal: string;
-  fechaNacimiento: string;
+  fechaNacimiento: Date;
   genero: string;
   pais: string;
   ciudad: string;
@@ -46,10 +43,23 @@ export interface FoodieApplicationRequest {
   aceptaTerminos: boolean;
 }
 
-export interface FoodieApplicationResponse {
-  id: number;
-  estado: 'pendiente' | 'aprobado' | 'rechazado';
-  fechaAplicacion: Date;
-  fechaRespuesta?: Date;
+export interface FormularioFoodieUpdate {
+  nombreCompleto?: string;
+  email?: string;
+  numeroPersonal?: string;
+  fechaNacimiento?: Date;
+  genero?: string;
+  pais?: string;
+  ciudad?: string;
+  frecuenciaContenido?: string;
+  usuarioInstagram?: string;
+  seguidoresInstagram?: number;
+  cuentaPublica?: boolean;
+  usuarioTikTok?: string;
+  seguidoresTikTok?: number;
+  sobreTi?: string;
+  aceptaBeneficios?: string;
+  aceptaTerminos?: boolean;
+  estado?: string;
   comentarios?: string;
 }

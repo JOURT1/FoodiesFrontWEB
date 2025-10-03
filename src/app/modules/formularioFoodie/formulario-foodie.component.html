@@ -3,8 +3,13 @@
   <!-- Header Section -->
   <section class="header-section">
     <div class="header-content">
-      <h1 class="main-title">Aplicación Para <span class="highlight">Foodies</span></h1>
-      <p class="main-subtitle">Completa la información y únete a FoodiesBNB.</p>
+      <h1 class="main-title">
+        {{ isEditing ? 'Actualizar Información' : 'Aplicación Para' }} 
+        <span class="highlight">Foodies</span>
+      </h1>
+      <p class="main-subtitle">
+        {{ isEditing ? 'Modifica tu información y mantén tu perfil actualizado.' : 'Completa la información y únete a FoodiesBNB.' }}
+      </p>
     </div>
   </section>
 
@@ -343,8 +348,8 @@
             [disabled]="foodieForm.invalid || isSaving"
             [class.loading]="isSaving">
             <i class="pi" [class.pi-spin]="isSaving" [class.pi-spinner]="isSaving" [class.pi-send]="!isSaving"></i>
-            <span *ngIf="!isSaving">Enviar Aplicación</span>
-            <span *ngIf="isSaving">Enviando...</span>
+            <span *ngIf="!isSaving">{{ isEditing ? 'Actualizar Información' : 'Enviar Aplicación' }}</span>
+            <span *ngIf="isSaving">{{ isEditing ? 'Actualizando...' : 'Enviando...' }}</span>
           </button>
         </div>
       </form>
