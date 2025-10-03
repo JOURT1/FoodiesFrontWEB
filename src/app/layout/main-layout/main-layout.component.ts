@@ -1,11 +1,12 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { SidebarComponent, SidebarMenuItem } from '../components/sidebar/sidebar.component';
 import { HeaderComponent } from '../components/header/header.component';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ToastModule } from 'primeng/toast';
 import { AuthService } from '../../core/services/auth.service';
 import { User } from '../../core/models/auth.model';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-main-layout',
@@ -16,17 +17,18 @@ import { User } from '../../core/models/auth.model';
 })
 export class MainLayoutComponent implements OnInit {
   private authService = inject(AuthService);
+  private router = inject(Router);
   
   sidebarVisible = true;
   currentUser: User | null = null;
 
   // Datos de ejemplo para el sidebar
   menuItems: SidebarMenuItem[] = [
-    { label: 'Dashboard', icon: 'pi-home', route: '/dashboard', active: true },
-    { label: 'Foodies', icon: 'pi-heart', route: '/foodies' },
-    { label: 'Restaurantes', icon: 'pi-building', route: '/restaurantes' },
-    { label: 'Beneficios', icon: 'pi-gift', route: '/beneficios' },
-    { label: 'Cuenta', icon: 'pi-user', route: '/cuenta' }
+    { label: 'Dashboard', icon: 'pi-home', route: '/dashboard', active: false },
+    { label: 'Foodies', icon: 'pi-heart', route: '/foodies', active: false },
+    { label: 'Restaurantes', icon: 'pi-building', route: '/restaurantes', active: false },
+    { label: 'Beneficios', icon: 'pi-gift', route: '/beneficios', active: false },
+    { label: 'Cuenta', icon: 'pi-user', route: '/cuenta', active: false }
   ];
 
   get userInfo() {
@@ -49,6 +51,16 @@ export class MainLayoutComponent implements OnInit {
     if (!this.authService.isAuthenticated()) {
       this.authService.logout();
     }
+
+    // Suscribirse a los cambios de ruta para actualizar el elemento activo
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: NavigationEnd) => {
+      this.updateActiveMenuItem(event.url);
+    });
+
+    // Establecer el elemento activo inicial
+    this.updateActiveMenuItem(this.router.url);
   }
 
   handleSidebarToggle() {
@@ -56,9 +68,22 @@ export class MainLayoutComponent implements OnInit {
   }
 
   onSidebarItemClick(item: SidebarMenuItem) {
-    // Actualizar el elemento activo
+    // Navegar a la ruta
+    this.router.navigate([item.route]);
+  }
+
+  private updateActiveMenuItem(currentUrl: string) {
+    // Limpiar todos los elementos activos
     this.menuItems.forEach(menuItem => menuItem.active = false);
-    item.active = true;
+    
+    // Encontrar y activar el elemento que coincide con la URL actual
+    const activeItem = this.menuItems.find(menuItem => 
+      menuItem.route && currentUrl.startsWith(menuItem.route)
+    );
+    
+    if (activeItem) {
+      activeItem.active = true;
+    }
   }
 
   onLogout() {

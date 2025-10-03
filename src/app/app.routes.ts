@@ -71,7 +71,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./modules/dashboardUsuarios/dashboard-usuarios.component').then(m => m.DashboardUsuariosComponent)
+        loadComponent: () => import('./modules/formularioFoodie/formulario-foodie.component').then(m => m.FormularioFoodieComponent)
       }
     ]
   },
