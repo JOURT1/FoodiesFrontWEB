@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, noAuthGuard } from './core/guards/auth.guard';
+import { foodieGuard } from './core/guards/foodie.guard';
 
 export const routes: Routes = [
   // Ruta raíz - redirigir según el estado de autenticación
@@ -72,6 +73,28 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () => import('./modules/formularioFoodie/formulario-foodie.component').then(m => m.FormularioFoodieComponent)
+      }
+    ]
+  },
+  {
+    path: 'formulario-foodie',
+    canActivate: [authGuard],
+    loadComponent: () => import('./layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./modules/formularioFoodie/formulario-foodie.component').then(m => m.FormularioFoodieComponent)
+      }
+    ]
+  },
+  {
+    path: 'dashboard-foodie',
+    canActivate: [authGuard, foodieGuard],
+    loadComponent: () => import('./layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./modules/dashboardFoodie/dashboard-foodie.component').then(m => m.DashboardFoodieComponent)
       }
     ]
   },

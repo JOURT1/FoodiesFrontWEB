@@ -34,18 +34,21 @@ export class AuthService {
       if (this.hasValidToken()) {
         this.isAuthenticatedSubject.next(true);
         
-        // Si no hay usuario en memoria pero hay token válido, crear usuario mock
-        if (!this.getCurrentUserFromStorage()) {
-          const mockUser: User = {
-            id: 1,
-            nombre: 'Usuario',
-            apellido: 'Foodie',
-            correo: 'usuario@foodiesbnb.com',
-            fechaCreacion: new Date(),
-            estaActivo: true
-          };
-          localStorage.setItem(this.userKey, JSON.stringify(mockUser));
-          this.currentUserSubject.next(mockUser);
+        // Verificar si tenemos usuario en storage, si no, obtenerlo del servidor
+        const storedUser = this.getCurrentUserFromStorage();
+        if (storedUser) {
+          this.currentUserSubject.next(storedUser);
+        } else {
+          // Obtener información actual del usuario del servidor
+          this.getUserInfo().subscribe({
+            next: (user) => {
+              // Usuario ya se actualiza en getUserInfo
+            },
+            error: (error) => {
+              console.error('Error al restaurar información del usuario:', error);
+              this.logout();
+            }
+          });
         }
       }
     }
@@ -118,26 +121,33 @@ export class AuthService {
    * Obtener información del usuario actual del servidor
    */
   getUserInfo(): Observable<User> {
-    // Primero intentar obtener el usuario del token si es posible
-    // Por ahora, usar un usuario por defecto hasta que implementemos JWT parsing
-    const mockUser: User = {
-      id: 1,
-      nombre: 'Usuario',
-      apellido: 'Foodie',
-      correo: 'usuario@foodiesbnb.com',
-      fechaCreacion: new Date(),
-      estaActivo: true
-    };
-
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem(this.userKey, JSON.stringify(mockUser));
-    }
-    this.currentUserSubject.next(mockUser);
-    
-    return new Observable(observer => {
-      observer.next(mockUser);
-      observer.complete();
-    });
+    return this.http.get<any>(`${this.apiUrl}/mi-usuario`)
+      .pipe(
+        map(response => {
+          const user: User = {
+            id: response.id,
+            // Handle both formats: separate nombre/apellido or combined name
+            nombre: response.nombre || (response.name ? response.name.split(' ')[0] : 'Usuario'),
+            apellido: response.apellido || (response.name ? response.name.split(' ').slice(1).join(' ') : ''),
+            // Handle both email and correo
+            correo: response.correo || response.email || 'sin-email@foodiesbnb.com',
+            fechaCreacion: new Date(response.fechaCreacion || new Date()),
+            estaActivo: response.estaActivo || true
+          };
+          
+          if (isPlatformBrowser(this.platformId)) {
+            localStorage.setItem(this.userKey, JSON.stringify(user));
+          }
+          this.currentUserSubject.next(user);
+          
+          return user;
+        }),
+        catchError(error => {
+          console.error('Error al obtener información del usuario:', error);
+          this.logout();
+          return throwError(() => error);
+        })
+      );
   }
 
   /**
@@ -173,21 +183,28 @@ export class AuthService {
 
     this.isAuthenticatedSubject.next(true);
     
-    // Por ahora usar un usuario mock hasta implementar JWT parsing
-    const mockUser: User = {
-      id: 1,
-      nombre: 'Usuario',
-      apellido: 'Foodie', 
-      correo: 'usuario@foodiesbnb.com',
-      fechaCreacion: new Date(),
-      estaActivo: true
-    };
-    
-    localStorage.setItem(this.userKey, JSON.stringify(mockUser));
-    this.currentUserSubject.next(mockUser);
-    
-    // Navegar al dashboard
-    this.router.navigate(['/dashboard']);
+    // Obtener información real del usuario del servidor
+    this.getUserInfo().subscribe({
+      next: (user) => {
+        // Usuario ya se guarda en localStorage y se actualiza el subject en getUserInfo
+        this.router.navigate(['/dashboard']);
+      },
+      error: (error) => {
+        console.error('Error al obtener información del usuario después del login:', error);
+        // Si no se puede obtener la info del usuario, usar un usuario temporal
+        const tempUser: User = {
+          id: 0,
+          nombre: 'Usuario',
+          apellido: 'Temporal',
+          correo: 'temporal@foodiesbnb.com',
+          fechaCreacion: new Date(),
+          estaActivo: true
+        };
+        localStorage.setItem(this.userKey, JSON.stringify(tempUser));
+        this.currentUserSubject.next(tempUser);
+        this.router.navigate(['/dashboard']);
+      }
+    });
   }
 
   private handleAuthError(error: any): Observable<never> {
