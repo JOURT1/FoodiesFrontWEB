@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { FormularioFoodie, FormularioFoodieCreate, FormularioFoodieUpdate } from '../models/formulario-foodie.model';
+import { FormularioFoodie, FormularioFoodieCreate, FormularioFoodieUpdate, FormularioFoodieSubmissionResponse } from '../models/formulario-foodie.model';
 
 @Injectable({
   providedIn: 'root'
@@ -50,8 +50,8 @@ export class FormularioFoodieService {
   /**
    * Crea un nuevo formulario para el usuario autenticado
    */
-  create(formulario: FormularioFoodieCreate): Observable<FormularioFoodie> {
-    return this.http.post<FormularioFoodie>(this.apiUrl, formulario);
+  create(formulario: FormularioFoodieCreate): Observable<FormularioFoodieSubmissionResponse> {
+    return this.http.post<FormularioFoodieSubmissionResponse>(this.apiUrl, formulario);
   }
 
   /**

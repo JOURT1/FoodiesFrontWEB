@@ -24,6 +24,14 @@ export interface FormularioFoodie {
   activo?: boolean;
 }
 
+export interface FormularioFoodieSubmissionResponse {
+  success: boolean;
+  message: string;
+  formularioData?: FormularioFoodie;
+  rolFoodieAsignado: boolean;
+  rolMessage?: string;
+}
+
 export interface FormularioFoodieCreate {
   nombreCompleto: string;
   email: string;

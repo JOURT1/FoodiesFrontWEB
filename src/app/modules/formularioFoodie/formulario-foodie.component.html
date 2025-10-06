@@ -351,6 +351,14 @@
             <span *ngIf="!isSaving">{{ isEditing ? 'Actualizar Información' : 'Enviar Aplicación' }}</span>
             <span *ngIf="isSaving">{{ isEditing ? 'Actualizando...' : 'Enviando...' }}</span>
           </button>
+          
+          <!-- Notificación simple debajo del botón -->
+          <div *ngIf="notificationMessage" 
+               class="notification-message" 
+               [ngClass]="notificationType">
+            <i class="pi" [ngClass]="getNotificationIcon()"></i>
+            <span>{{ notificationMessage }}</span>
+          </div>
         </div>
       </form>
     </div>

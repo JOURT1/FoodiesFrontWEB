@@ -1,16 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { FormularioFoodieService } from '../../core/services/formulario-foodie.service';
-import { FormularioFoodieCreate, FormularioFoodieUpdate } from '../../core/models/formulario-foodie.model';
+import { FormularioFoodieCreate, FormularioFoodieUpdate, FormularioFoodieSubmissionResponse } from '../../core/models/formulario-foodie.model';
 
 @Component({
   selector: 'app-formulario-foodie',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ToastModule],
-  providers: [MessageService],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './formulario-foodie.component.html',
   styleUrls: ['./formulario-foodie.component.css']
 })
@@ -20,14 +17,39 @@ export class FormularioFoodieComponent implements OnInit {
   isSaving = false;
   isEditing = false;
   formularioId?: number;
+  
+  // Propiedades para notificación simple
+  notificationMessage: string = '';
+  notificationType: 'success' | 'error' | 'info' = 'info';
 
   constructor(
     private formBuilder: FormBuilder,
-    private messageService: MessageService,
     private formularioFoodieService: FormularioFoodieService
   ) {}
   
-  // Opciones para los selectores
+  // Métodos para notificación simple
+  showNotification(message: string, type: 'success' | 'error' | 'info' = 'info', duration: number = 5000): void {
+    this.notificationMessage = message;
+    this.notificationType = type;
+    
+    // Auto-ocultar después del tiempo especificado
+    setTimeout(() => {
+      this.hideNotification();
+    }, duration);
+  }
+
+  hideNotification(): void {
+    this.notificationMessage = '';
+  }
+
+  getNotificationIcon(): string {
+    switch (this.notificationType) {
+      case 'success': return 'pi-check-circle';
+      case 'error': return 'pi-times-circle';
+      case 'info': return 'pi-info-circle';
+      default: return 'pi-info-circle';
+    }
+  }
   readonly paisesDisponibles = [
     { value: 'ecuador', label: 'Ecuador' }
   ];
@@ -73,12 +95,7 @@ export class FormularioFoodieComponent implements OnInit {
         this.isEditing = true;
         this.formularioId = formulario.id;
         this.cargarDatosFormulario(formulario);
-        this.messageService.add({
-          severity: 'info',
-          summary: 'Información',
-          detail: 'Ya tienes un formulario registrado. Puedes actualizarlo.',
-          life: 5000
-        });
+        this.showNotification('Ya tienes un formulario registrado. Puedes actualizarlo.', 'info', 5000);
       }
     } catch (error: any) {
       if (error.status !== 404) {
@@ -139,6 +156,10 @@ export class FormularioFoodieComponent implements OnInit {
   async onSubmit(): Promise<void> {
     if (this.foodieForm.valid) {
       this.isSaving = true;
+      
+      // Mostrar notificación inmediata de que se está procesando
+      this.showNotification('Aplicación enviada', 'success', 5000);
+      
       try {
         if (this.isEditing) {
           await this.actualizarFormulario();
@@ -152,12 +173,7 @@ export class FormularioFoodieComponent implements OnInit {
       }
     } else {
       this.marcarCamposInvalidos();
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Por favor, completa todos los campos requeridos correctamente.',
-        life: 5000
-      });
+      this.showNotification('Por favor, completa todos los campos requeridos correctamente.', 'error', 5000);
     }
   }
 
@@ -165,47 +181,45 @@ export class FormularioFoodieComponent implements OnInit {
     const formData: FormularioFoodieCreate = this.buildCreateModel();
     
     this.formularioFoodieService.create(formData).subscribe({
-      next: (response) => {
-        // Mensaje principal de éxito
-        this.messageService.add({
-          severity: 'success',
-          summary: '🎉 ¡Formulario Enviado Exitosamente!',
-          detail: 'Tu aplicación para ser Foodie ha sido registrada correctamente. Te contactaremos pronto.',
-          life: 8000
-        });
-        
-        this.isEditing = true;
-        this.formularioId = response.id;
-        
-        // Verificar si cumple requisitos para rol foodie
-        if (response.seguidoresInstagram >= 1000 || response.seguidoresTikTok >= 1000) {
-          setTimeout(() => {
-            this.messageService.add({
-              severity: 'success',
-              summary: '🌟 ¡Felicitaciones, eres Foodie!',
-              detail: `¡Increíble! Con ${response.seguidoresInstagram} seguidores en Instagram y ${response.seguidoresTikTok} en TikTok, has obtenido automáticamente el rol de Foodie. ¡Disfruta de todos los beneficios!`,
-              life: 10000
-            });
-          }, 1500);
+      next: (response: FormularioFoodieSubmissionResponse) => {
+        if (response.success) {
+          // Mensaje principal de éxito usando el mensaje del backend
+          this.showNotification(response.message, 'success', 8000);
+          
+          // Si hay datos del formulario, actualizar el estado
+          if (response.formularioData) {
+            this.isEditing = true;
+            this.formularioId = response.formularioData.id;
+          }
+          
+          // Si hay mensaje sobre el rol, mostrarlo después de un tiempo
+          if (response.rolMessage) {
+            setTimeout(() => {
+              if (response.rolFoodieAsignado) {
+                this.showNotification('¡Felicitaciones, eres Foodie! ' + response.rolMessage, 'success', 10000);
+              } else {
+                this.showNotification(response.rolMessage || 'Información adicional disponible', 'info', 7000);
+              }
+            }, 3000);
+          }
         } else {
-          setTimeout(() => {
-            this.messageService.add({
-              severity: 'info',
-              summary: '📈 Sigue creciendo',
-              detail: 'Necesitas al menos 1,000 seguidores en Instagram o TikTok para obtener el rol Foodie automáticamente. ¡Sigue creando contenido increíble!',
-              life: 7000
-            });
-          }, 1500);
+          // Error del backend con mensaje personalizado
+          this.showNotification(response.message, 'error', 8000);
         }
       },
       error: (error) => {
         console.error('Error al crear formulario:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error al enviar',
-          detail: 'Hubo un problema al enviar tu formulario. Por favor, inténtalo nuevamente.',
-          life: 6000
-        });
+        
+        // Manejo de errores específicos
+        let errorMessage = 'Hubo un problema al enviar tu formulario. Por favor, inténtalo nuevamente.';
+        
+        if (error.error && error.error.message) {
+          errorMessage = error.error.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        this.showNotification(errorMessage, 'error', 8000);
       }
     });
   }
@@ -216,33 +230,18 @@ export class FormularioFoodieComponent implements OnInit {
     this.formularioFoodieService.updateMyFormulario(formData).subscribe({
       next: (response) => {
         // Mensaje principal de actualización
-        this.messageService.add({
-          severity: 'success',
-          summary: '✅ Información Actualizada',
-          detail: 'Tus datos han sido actualizados correctamente. Gracias por mantenerte al día.',
-          life: 6000
-        });
+        this.showNotification('✅ Información Actualizada - Tus datos han sido actualizados correctamente. Gracias por mantenerte al día.', 'success', 6000);
         
         // Verificar si ahora cumple requisitos para rol foodie
         if (response.seguidoresInstagram >= 1000 || response.seguidoresTikTok >= 1000) {
           setTimeout(() => {
-            this.messageService.add({
-              severity: 'success',
-              summary: '🎊 ¡Ahora eres Foodie!',
-              detail: `¡Genial! Con tus nuevos números de seguidores (${response.seguidoresInstagram} en Instagram, ${response.seguidoresTikTok} en TikTok), ahora tienes el rol Foodie. ¡Disfruta de los beneficios!`,
-              life: 9000
-            });
+            this.showNotification(`🎊 ¡Ahora eres Foodie! Con tus nuevos números de seguidores (${response.seguidoresInstagram} en Instagram, ${response.seguidoresTikTok} en TikTok), ahora tienes el rol Foodie. ¡Disfruta de los beneficios!`, 'success', 9000);
           }, 1000);
         }
       },
       error: (error) => {
         console.error('Error al actualizar formulario:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error al actualizar',
-          detail: 'Hubo un problema al actualizar tu información. Por favor, inténtalo nuevamente.',
-          life: 6000
-        });
+        this.showNotification('Hubo un problema al actualizar tu información. Por favor, inténtalo nuevamente.', 'error', 6000);
       }
     });
   }
