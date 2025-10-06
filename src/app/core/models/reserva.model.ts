@@ -10,6 +10,10 @@ export interface Reserva {
   fechaActualizacion?: Date;
   entregables?: Entregable[];
   
+  // Información del usuario/foodie
+  nombreUsuario?: string;
+  correoUsuario?: string;
+  
   // Propiedades calculadas del backend
   puedeCancelar?: boolean;
   enPeriodoEntrega?: boolean;

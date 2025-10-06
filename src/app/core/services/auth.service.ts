@@ -121,9 +121,20 @@ export class AuthService {
    * Obtener información del usuario actual del servidor
    */
   getUserInfo(): Observable<User> {
-    return this.http.get<any>(`${this.apiUrl}/mi-usuario`)
+    const token = this.getAccessToken();
+    if (!token) {
+      return throwError(() => new Error('No hay token de acceso'));
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${token}`
+    };
+
+    return this.http.get<any>(`${this.apiUrl}/auth/userinfo`, { headers })
       .pipe(
         map(response => {
+          console.log('Respuesta del servidor para userinfo:', response);
+          
           const user: User = {
             id: response.id,
             // Handle both formats: separate nombre/apellido or combined name
@@ -132,8 +143,12 @@ export class AuthService {
             // Handle both email and correo
             correo: response.correo || response.email || 'sin-email@foodiesbnb.com',
             fechaCreacion: new Date(response.fechaCreacion || new Date()),
-            estaActivo: response.estaActivo || true
+            estaActivo: response.estaActivo || true,
+            // Include roles from the response
+            roles: response.roles || []
           };
+          
+          console.log('Usuario procesado con roles:', user.roles);
           
           if (isPlatformBrowser(this.platformId)) {
             localStorage.setItem(this.userKey, JSON.stringify(user));
@@ -164,6 +179,29 @@ export class AuthService {
           this.currentUserSubject.next(user);
         })
       );
+  }
+
+  /**
+   * Obtener roles del usuario actual
+   */
+  getUserRoles(): string[] {
+    const currentUser = this.getCurrentUser();
+    return currentUser?.roles || [];
+  }
+
+  /**
+   * Verificar si el usuario tiene un rol específico
+   */
+  hasRole(role: string): boolean {
+    const roles = this.getUserRoles();
+    return roles.includes(role);
+  }
+
+  /**
+   * Verificar si el usuario tiene rol de restaurante
+   */
+  isRestaurante(): boolean {
+    return this.hasRole('restaurante');
   }
 
   // Métodos privados

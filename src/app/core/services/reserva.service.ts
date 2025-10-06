@@ -82,6 +82,34 @@ export class ReservaService {
     return this.http.get<Reserva[]>(`${this.apiUrl}/por-fecha`, { params });
   }
 
+  /**
+   * Obtener reservas por nombre de local (para restaurantes)
+   */
+  getReservasByRestaurante(nombreLocal: string): Observable<Reserva[]> {
+    return this.http.get<Reserva[]>(`${this.apiUrl}/por-restaurante/${encodeURIComponent(nombreLocal)}`);
+  }
+
+  /**
+   * Obtener reservas del restaurante actual (basado en el rol del usuario)
+   */
+  getReservasDelRestaurante(): Observable<Reserva[]> {
+    return this.http.get<Reserva[]>(`${this.apiUrl}/por-restaurante`);
+  }
+
+  /**
+   * Confirmar una reserva (para restaurantes)
+   */
+  confirmarReserva(id: number): Observable<Reserva> {
+    return this.cambiarEstadoReserva(id, { estado: 'Visita Completada' });
+  }
+
+  /**
+   * Cancelar una reserva (para restaurantes)
+   */
+  cancelarReserva(id: number): Observable<Reserva> {
+    return this.cambiarEstadoReserva(id, { estado: 'Falta Grave' });
+  }
+
   // ============ ENTREGABLES ============
 
   /**

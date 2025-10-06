@@ -50,7 +50,18 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./modules/dashboardUsuarios/dashboard-usuarios.component').then(m => m.DashboardUsuariosComponent)
+        loadComponent: () => import('./modules/restaurante-router/restaurante-router.component')
+          .then(m => m.RestauranteRouterComponent)
+      },
+      {
+        path: 'info',
+        loadComponent: () => import('./modules/inforolrestaurante/info-rol-restaurante.component')
+          .then(m => m.InfoRolRestauranteComponent)
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./modules/dashboard-restaurante/dashboard-restaurante.component')
+          .then(m => m.DashboardRestauranteComponent)
       }
     ]
   },
