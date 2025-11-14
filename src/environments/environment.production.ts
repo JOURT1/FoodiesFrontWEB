@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://foodies-gateway-srv-d47d5rali9vc738kvr3g.onrender.com',
+  apiBaseUrl: 'https://foodies-gateway.onrender.com',
   oauth: {
     tokenUrl: '/connect/token',
     clientId: 'gateway',
