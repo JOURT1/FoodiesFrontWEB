@@ -25,6 +25,7 @@ export class MainLayoutComponent implements OnInit {
   currentUser: User | null = null;
   userWithRoles: UserWithRoles | null = null;
   hasFoodieRole = false;
+  hasAdminRole = false;
   userInfo = {
     name: 'Usuario Foodie',
     email: 'usuario@foodiesbnb.com'
@@ -39,12 +40,30 @@ export class MainLayoutComponent implements OnInit {
     { label: 'Cuenta', icon: 'pi-user', route: '/cuenta', active: false }
   ];
 
+  // Menú dinámico que se filtra según roles
+  get filteredMenuItems(): SidebarMenuItem[] {
+    const items = [...this.menuItems];
+    
+    // Agregar Core solo si tiene rol de Admin
+    if (this.hasAdminRole) {
+      items.push({ label: 'Core', icon: 'pi-cog', route: '/admincore', active: false });
+    }
+    
+    return items;
+  }
+
   ngOnInit() {
     // Suscribirse al usuario actual
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
       this.updateUserInfo(); // Update userInfo when user changes
       if (user) {
+        // Verificar rol de admin directamente desde el usuario
+        this.hasAdminRole = this.authService.hasRole('Admin') || this.authService.hasRole('admin');
+        console.log('Usuario actual:', user);
+        console.log('Roles del usuario:', user.roles);
+        console.log('Tiene rol Admin:', this.hasAdminRole);
+        
         this.checkUserRoles();
       }
     });
@@ -101,11 +120,24 @@ export class MainLayoutComponent implements OnInit {
       next: (userWithRoles) => {
         this.userWithRoles = userWithRoles;
         this.hasFoodieRole = this.roleService.hasFoodieRole(userWithRoles);
+        
+        // Verificar si tiene rol de Admin (verificar ambas formas por si acaso)
+        const hasAdminFromService = userWithRoles.roles.some(
+          rol => rol.nombre.toLowerCase() === 'admin'
+        );
+        
+        // Usar el valor que ya verificamos del AuthService o este
+        this.hasAdminRole = this.hasAdminRole || hasAdminFromService;
+        
+        console.log('Roles desde RoleService:', userWithRoles.roles);
+        console.log('Tiene Admin desde service:', hasAdminFromService);
+        console.log('hasAdminRole final:', this.hasAdminRole);
+        
         this.updateFoodiesMenuItem();
       },
       error: (error) => {
         console.error('Error obteniendo roles del usuario:', error);
-        // En caso de error, asumir que no tiene rol de foodie y mostrar formulario
+        // En caso de error, mantener el valor que ya verificamos del AuthService
         this.hasFoodieRole = false;
         this.updateFoodiesMenuItem();
       }
@@ -134,12 +166,12 @@ export class MainLayoutComponent implements OnInit {
   }
 
   private updateActiveMenuItem(currentUrl: string) {
-    // Limpiar todos los elementos activos
-    this.menuItems.forEach(menuItem => menuItem.active = false);
+    // Limpiar todos los elementos activos (incluyendo los filtrados)
+    this.filteredMenuItems.forEach(menuItem => menuItem.active = false);
     
     // Casos especiales para rutas específicas
     if (currentUrl === '/dashboard-foodie' || currentUrl === '/formulario-foodie') {
-      const foodieItem = this.menuItems.find(item => item.label === 'Foodies');
+      const foodieItem = this.filteredMenuItems.find(item => item.label === 'Foodies');
       if (foodieItem) {
         foodieItem.active = true;
         return;
@@ -148,14 +180,14 @@ export class MainLayoutComponent implements OnInit {
     
     // Encontrar y activar el elemento que coincide con la URL actual
     // Buscar coincidencia exacta primero
-    let activeItem = this.menuItems.find(menuItem => 
+    let activeItem = this.filteredMenuItems.find(menuItem => 
       menuItem.route && currentUrl === menuItem.route
     );
     
     // Si no hay coincidencia exacta, buscar por startsWith pero evitar conflictos
     if (!activeItem) {
       // Ordenar por longitud de ruta (más específicas primero)
-      const sortedItems = this.menuItems
+      const sortedItems = this.filteredMenuItems
         .filter(item => item.route && item.route !== '/dashboard') // Excluir dashboard para evitar conflictos
         .sort((a, b) => (b.route?.length || 0) - (a.route?.length || 0));
       
@@ -165,7 +197,7 @@ export class MainLayoutComponent implements OnInit {
       
       // Si aún no hay coincidencia y la URL empieza con /dashboard, activar Dashboard
       if (!activeItem && currentUrl.startsWith('/dashboard')) {
-        activeItem = this.menuItems.find(item => item.route === '/dashboard');
+        activeItem = this.filteredMenuItems.find(item => item.route === '/dashboard');
       }
     }
     

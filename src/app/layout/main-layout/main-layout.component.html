@@ -9,7 +9,7 @@
     <div class="main-sidebar" [class.show]="sidebarVisible">
       <app-sidebar 
         [isOpen]="sidebarVisible"
-        [menuItems]="menuItems"
+        [menuItems]="filteredMenuItems"
         [userInfo]="userInfo"
         (itemClick)="onSidebarItemClick($event)"
         (logout)="onLogout()">

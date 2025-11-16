@@ -131,6 +131,29 @@ export const routes: Routes = [
       }
     ]
   },
+  {
+    path: 'admincore',
+    canActivate: [authGuard],
+    loadComponent: () => import('./layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./modules/admincore/admincore.component').then(m => m.AdmincoreComponent)
+      },
+      {
+        path: 'analytics',
+        loadComponent: () => import('./modules/admincore/analytics-dashboard/analytics-dashboard.component').then(m => m.AnalyticsDashboardComponent)
+      },
+      {
+        path: 'usuarios',
+        loadComponent: () => import('./modules/admincore/usuarios-manager/usuarios-manager.component').then(m => m.UsuariosManagerComponent)
+      },
+      {
+        path: 'roles',
+        loadComponent: () => import('./modules/admincore/roles-manager/roles-manager.component').then(m => m.RolesManagerComponent)
+      }
+    ]
+  },
   // Ruta comodín - redirigir a login
   {
     path: '**',
