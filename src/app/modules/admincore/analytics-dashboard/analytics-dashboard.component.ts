@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminCoreService } from '../../../core/services/admin-core.service';
 import { ResumenGeneralDto, RestauranteAnalyticsDto, TendenciaVisitasDto } from '../../../core/models/admincore.model';
@@ -21,7 +21,10 @@ export class AnalyticsDashboardComponent implements OnInit {
   hasData = false;
   errorMessage = '';
 
-  constructor(private adminService: AdminCoreService) {}
+  constructor(
+    private adminService: AdminCoreService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadData();
@@ -31,43 +34,82 @@ export class AnalyticsDashboardComponent implements OnInit {
     this.loading = true;
     this.errorMessage = '';
     
+    // Contador para saber cuándo terminan todas las peticiones
+    let completedRequests = 0;
+    const totalRequests = 3;
+    
+    const checkIfAllLoaded = () => {
+      completedRequests++;
+      if (completedRequests === totalRequests) {
+        console.log('Todas las peticiones completadas');
+        console.log('Resumen:', this.resumen);
+        console.log('Restaurantes:', this.restaurantesAnalytics);
+        console.log('Tendencias:', this.tendencias);
+        
+        // Verificar si hay datos (aunque sean pocos)
+        if (this.resumen) {
+          this.hasData = true;
+          this.loading = false;
+          console.log('hasData se estableció en true');
+          console.log('loading se estableció en false');
+          
+          // Forzar detección de cambios
+          this.cdr.detectChanges();
+          
+          // Dar tiempo al DOM para renderizar antes de crear gráficos
+          setTimeout(() => {
+            console.log('Creando gráficos...');
+            this.createCharts();
+            if (this.restaurantesAnalytics.length > 0) {
+              this.createRestaurantesChart();
+            }
+            if (this.tendencias.length > 0) {
+              this.createTendenciasChart();
+            }
+          }, 200);
+        } else {
+          this.hasData = false;
+          this.loading = false;
+          this.cdr.detectChanges();
+          console.log('No hay resumen disponible');
+        }
+      }
+    };
+    
     this.adminService.getResumenGeneral().subscribe({
       next: (data) => {
+        console.log('Resumen General recibido:', data);
         this.resumen = data;
-        this.hasData = data.totalUsuarios > 0 || data.totalReservas > 0;
-        this.loading = false;
-        if (this.hasData) {
-          setTimeout(() => this.createCharts(), 100);
-        }
+        checkIfAllLoaded();
       },
       error: (error) => {
         console.error('Error cargando resumen:', error);
         this.errorMessage = 'Error al cargar los datos. Por favor, intenta nuevamente.';
-        this.loading = false;
+        checkIfAllLoaded();
       }
     });
 
     this.adminService.getRestaurantesAnalytics().subscribe({
       next: (data) => {
+        console.log('Restaurantes Analytics recibido:', data);
         this.restaurantesAnalytics = data;
-        if (data.length > 0) {
-          setTimeout(() => this.createRestaurantesChart(), 100);
-        }
+        checkIfAllLoaded();
       },
       error: (error) => {
         console.error('Error cargando restaurantes:', error);
+        checkIfAllLoaded();
       }
     });
 
     this.adminService.getTendencias().subscribe({
       next: (data) => {
+        console.log('Tendencias recibidas:', data);
         this.tendencias = data;
-        if (data.length > 0) {
-          setTimeout(() => this.createTendenciasChart(), 100);
-        }
+        checkIfAllLoaded();
       },
       error: (error) => {
         console.error('Error cargando tendencias:', error);
+        checkIfAllLoaded();
       }
     });
   }

@@ -117,12 +117,15 @@ export class AdminCoreService {
 
   // Analytics
   getResumenGeneral(): Observable<ResumenGeneralDto> {
+    console.log('Llamando a:', `${this.apiUrl}/Analytics/resumen-general`);
+    console.log('Token:', localStorage.getItem('access_token') ? 'Presente' : 'Ausente');
     return this.http.get<ResumenGeneralDto>(`${this.apiUrl}/Analytics/resumen-general`, {
       headers: this.getHeaders()
     });
   }
 
   getRestaurantesAnalytics(): Observable<RestauranteAnalyticsDto[]> {
+    console.log('Llamando a:', `${this.apiUrl}/Analytics/restaurantes`);
     return this.http.get<RestauranteAnalyticsDto[]>(`${this.apiUrl}/Analytics/restaurantes`, {
       headers: this.getHeaders()
     });
@@ -135,6 +138,7 @@ export class AdminCoreService {
   }
 
   getTendencias(): Observable<TendenciaVisitasDto[]> {
+    console.log('Llamando a:', `${this.apiUrl}/Analytics/tendencias`);
     return this.http.get<TendenciaVisitasDto[]>(`${this.apiUrl}/Analytics/tendencias`, {
       headers: this.getHeaders()
     });
