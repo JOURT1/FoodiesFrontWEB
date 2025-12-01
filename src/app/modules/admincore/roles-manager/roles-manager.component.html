@@ -81,6 +81,9 @@
                   [title]="rol.activo ? 'Desactivar' : 'Activar'">
                   <i class="pi pi-power-off"></i>
                 </button>
+                <button class="btn-action delete" (click)="confirmDeleteRol(rol)" title="Eliminar">
+                  <i class="pi pi-trash"></i>
+                </button>
               </div>
             </td>
           </tr>

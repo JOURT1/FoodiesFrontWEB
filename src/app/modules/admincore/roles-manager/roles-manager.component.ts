@@ -111,7 +111,7 @@ export class RolesManagerComponent implements OnInit {
     }
 
     const rolData = {
-      nombre: this.nuevoRol.nombre.toLowerCase().trim(),
+      nombre: this.nuevoRol.nombre.trim(), // Mantener mayúsculas y minúsculas originales
       descripcion: this.nuevoRol.descripcion.trim()
     };
 
@@ -147,6 +147,40 @@ export class RolesManagerComponent implements OnInit {
           severity: 'info',
           summary: 'Información',
           detail: `Rol ${action}do correctamente`
+        });
+      }
+    });
+  }
+
+  confirmDeleteRol(rol: RolDto) {
+    this.confirmationService.confirm({
+      message: `¿Estás seguro de eliminar el rol "${rol.nombre}"? Esta acción no se puede deshacer.`,
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.deleteRol(rol);
+      }
+    });
+  }
+
+  deleteRol(rol: RolDto) {
+    this.adminService.deleteRol(rol.id).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: `Rol "${rol.nombre}" eliminado correctamente`
+        });
+        this.loadRoles();
+      },
+      error: (error) => {
+        console.error('Error al eliminar rol:', error);
+        const errorMessage = error.error?.message || error.message || 'Error al eliminar rol. Puede que tenga usuarios asignados.';
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: errorMessage
         });
       }
     });

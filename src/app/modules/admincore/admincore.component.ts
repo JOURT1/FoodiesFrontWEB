@@ -29,22 +29,6 @@ export class AdmincoreComponent implements OnInit {
       color: '#2196F3'
     },
     {
-      id: 'reservas',
-      title: 'Gestión de Reservas',
-      description: 'Administra y elimina reservas del sistema',
-      icon: 'pi-calendar',
-      route: '/admincore/reservas',
-      color: '#FF9800'
-    },
-    {
-      id: 'formularios',
-      title: 'Gestión de Formularios',
-      description: 'Administra formularios de Foodies',
-      icon: 'pi-file-edit',
-      route: '/admincore/formularios',
-      color: '#9C27B0'
-    },
-    {
       id: 'roles',
       title: 'Gestión de Roles',
       description: 'Crea y asigna roles a usuarios',

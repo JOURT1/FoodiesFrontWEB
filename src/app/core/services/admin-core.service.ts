@@ -103,6 +103,12 @@ export class AdminCoreService {
     });
   }
 
+  deleteRol(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/Roles/${id}`, {
+      headers: this.getHeaders()
+    });
+  }
+
   asignarRol(request: AsignarRolRequest): Observable<any> {
     return this.http.post(`${this.apiUrl}/Roles/asignar`, request, {
       headers: this.getHeaders()
