@@ -12,6 +12,7 @@ import {
   TendenciaVisitasDto,
   ResumenGeneralDto,
   ComparativaRestaurantesDto,
+  ReservasPorFechaDto,
   CreateRolRequest,
   AsignarRolRequest
 } from '../models/admincore.model';
@@ -158,6 +159,12 @@ export class AdminCoreService {
 
   getComparativa(): Observable<ComparativaRestaurantesDto> {
     return this.http.get<ComparativaRestaurantesDto>(`${this.apiUrl}/Analytics/comparativa`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  getReservasPorFecha(): Observable<ReservasPorFechaDto[]> {
+    return this.http.get<ReservasPorFechaDto[]>(`${this.apiUrl}/Analytics/reservas-por-fecha`, {
       headers: this.getHeaders()
     });
   }

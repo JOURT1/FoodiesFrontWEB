@@ -128,6 +128,27 @@ export interface RestauranteComparativoDto {
   promedioPersonasPorReserva: number;
 }
 
+export interface ReservasPorFechaDto {
+  nombreRestaurante: string;
+  puntos: PuntoReservaDto[];
+  funcionAjuste: FuncionAjusteDto;
+}
+
+export interface PuntoReservaDto {
+  fecha: string;
+  numeroPersonas: number;
+  diaRelativo: number;
+}
+
+export interface FuncionAjusteDto {
+  pendiente: number;
+  intercepto: number;
+  coeficienteCorrelacion: number;
+  interpretacion: string;
+  promedioPersonas: number;
+  prediccionProximaSemana: number;
+}
+
 export interface CreateRolRequest {
   nombre: string;
   descripcion?: string;

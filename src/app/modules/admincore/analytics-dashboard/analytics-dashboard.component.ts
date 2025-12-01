@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminCoreService } from '../../../core/services/admin-core.service';
-import { ResumenGeneralDto, RestauranteAnalyticsDto, TendenciaVisitasDto } from '../../../core/models/admincore.model';
+import { ResumenGeneralDto, RestauranteAnalyticsDto, TendenciaVisitasDto, ReservasPorFechaDto } from '../../../core/models/admincore.model';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -17,6 +17,7 @@ export class AnalyticsDashboardComponent implements OnInit {
   resumen: ResumenGeneralDto | null = null;
   restaurantesAnalytics: RestauranteAnalyticsDto[] = [];
   tendencias: TendenciaVisitasDto[] = [];
+  reservasPorFecha: ReservasPorFechaDto[] = [];
   loading = true;
   hasData = false;
   errorMessage = '';
@@ -36,7 +37,7 @@ export class AnalyticsDashboardComponent implements OnInit {
     
     // Contador para saber cuándo terminan todas las peticiones
     let completedRequests = 0;
-    const totalRequests = 3;
+    const totalRequests = 4;
     
     const checkIfAllLoaded = () => {
       completedRequests++;
@@ -45,6 +46,7 @@ export class AnalyticsDashboardComponent implements OnInit {
         console.log('Resumen:', this.resumen);
         console.log('Restaurantes:', this.restaurantesAnalytics);
         console.log('Tendencias:', this.tendencias);
+        console.log('Reservas por Fecha:', this.reservasPorFecha);
         
         // Verificar si hay datos (aunque sean pocos)
         if (this.resumen) {
@@ -65,6 +67,9 @@ export class AnalyticsDashboardComponent implements OnInit {
             }
             if (this.tendencias.length > 0) {
               this.createTendenciasChart();
+            }
+            if (this.reservasPorFecha.length > 0) {
+              this.createReservasPorFechaChart();
             }
           }, 200);
         } else {
@@ -109,6 +114,18 @@ export class AnalyticsDashboardComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error cargando tendencias:', error);
+        checkIfAllLoaded();
+      }
+    });
+
+    this.adminService.getReservasPorFecha().subscribe({
+      next: (data) => {
+        console.log('Reservas por Fecha recibidas:', data);
+        this.reservasPorFecha = data;
+        checkIfAllLoaded();
+      },
+      error: (error) => {
+        console.error('Error cargando reservas por fecha:', error);
         checkIfAllLoaded();
       }
     });
@@ -399,5 +416,170 @@ export class AnalyticsDashboardComponent implements OnInit {
         }
       });
     }
+  }
+
+  createReservasPorFechaChart() {
+    if (!this.reservasPorFecha || this.reservasPorFecha.length === 0) return;
+
+    const ctx = document.getElementById('reservasPorFechaChart') as HTMLCanvasElement;
+    if (!ctx) return;
+
+    // Colores para cada restaurante
+    const colores = [
+      { punto: 'rgba(54, 162, 235, 0.8)', linea: 'rgba(54, 162, 235, 0.3)', prediccion: 'rgba(54, 162, 235, 1)' },
+      { punto: 'rgba(255, 99, 132, 0.8)', linea: 'rgba(255, 99, 132, 0.3)', prediccion: 'rgba(255, 99, 132, 1)' },
+      { punto: 'rgba(75, 192, 192, 0.8)', linea: 'rgba(75, 192, 192, 0.3)', prediccion: 'rgba(75, 192, 192, 1)' },
+      { punto: 'rgba(255, 206, 86, 0.8)', linea: 'rgba(255, 206, 86, 0.3)', prediccion: 'rgba(255, 206, 86, 1)' },
+      { punto: 'rgba(153, 102, 255, 0.8)', linea: 'rgba(153, 102, 255, 0.3)', prediccion: 'rgba(153, 102, 255, 1)' }
+    ];
+
+    const datasets: any[] = [];
+
+    this.reservasPorFecha.forEach((restaurante, index) => {
+      const color = colores[index % colores.length];
+      
+      // Dataset de puntos reales
+      const puntosReales = restaurante.puntos.map(p => ({
+        x: p.diaRelativo,
+        y: p.numeroPersonas
+      }));
+
+      datasets.push({
+        label: restaurante.nombreRestaurante,
+        data: puntosReales,
+        backgroundColor: color.punto,
+        borderColor: color.punto,
+        borderWidth: 2,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        showLine: true,
+        tension: 0.4,
+        fill: false
+      });
+
+      // Dataset de línea de regresión (función de ajuste)
+      if (restaurante.puntos.length > 0) {
+        const minX = Math.min(...restaurante.puntos.map(p => p.diaRelativo));
+        const maxX = Math.max(...restaurante.puntos.map(p => p.diaRelativo));
+        
+        // Solo 2 puntos para la línea de regresión (es una línea recta)
+        const puntosRegresion = [
+          { 
+            x: minX, 
+            y: restaurante.funcionAjuste.pendiente * minX + restaurante.funcionAjuste.intercepto 
+          },
+          { 
+            x: maxX + 7, // Extender hasta la predicción
+            y: restaurante.funcionAjuste.pendiente * (maxX + 7) + restaurante.funcionAjuste.intercepto 
+          }
+        ];
+
+        datasets.push({
+          label: `${restaurante.nombreRestaurante} (Función de Ajuste)`,
+          data: puntosRegresion,
+          borderColor: color.linea,
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false,
+          showLine: true,
+          tension: 0
+        });
+
+        // Punto de predicción próxima semana
+        const ultimoDia = maxX;
+        const prediccionDia = ultimoDia + 7;
+        const prediccionPersonas = restaurante.funcionAjuste.prediccionProximaSemana;
+
+        datasets.push({
+          label: `${restaurante.nombreRestaurante} (Predicción)`,
+          data: [{ x: prediccionDia, y: prediccionPersonas }],
+          backgroundColor: color.prediccion,
+          borderColor: '#FFD700',
+          borderWidth: 3,
+          pointRadius: 10,
+          pointStyle: 'star',
+          pointHoverRadius: 12,
+          showLine: false
+        });
+      }
+    });
+
+    new Chart(ctx, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 500 // Reducir duración de animación
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              font: { size: 12 },
+              filter: function(item: any) {
+                // Ocultar datasets de función de ajuste y predicción del legend
+                return !item.text.includes('(Función de Ajuste)') && !item.text.includes('(Predicción)');
+              }
+            }
+          },
+          title: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context: any) {
+                const label = context.dataset.label || '';
+                if (label.includes('(Función de Ajuste)')) {
+                  return '';
+                }
+                if (label.includes('(Predicción)')) {
+                  return `Predicción (+7 días): ${context.parsed.y.toFixed(1)} personas`;
+                }
+                return `${label}: ${context.parsed.y} personas (Día ${context.parsed.x})`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            position: 'bottom',
+            title: {
+              display: true,
+              text: 'Días desde primera reserva',
+              font: { size: 13, weight: 'bold' },
+              color: '#2c3e50'
+            },
+            ticks: {
+              stepSize: 5,
+              font: { size: 11 }
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Cantidad de Personas por Reserva',
+              font: { size: 13, weight: 'bold' },
+              color: '#2c3e50'
+            },
+            ticks: {
+              stepSize: 2,
+              font: { size: 11 }
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          }
+        }
+      }
+    });
   }
 }

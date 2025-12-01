@@ -68,6 +68,12 @@
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
+  position: relative;
+}
+
+.chart-single canvas {
+  max-height: 400px !important;
+  height: 400px !important;
 }
 
 .chart-full {
@@ -76,6 +82,12 @@
   padding: 2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 3rem;
+  position: relative;
+}
+
+.chart-full canvas {
+  max-height: 500px !important;
+  height: 500px !important;
 }
 
 .chart-description {
