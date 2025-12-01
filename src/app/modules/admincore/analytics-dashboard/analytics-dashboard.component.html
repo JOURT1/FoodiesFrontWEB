@@ -47,7 +47,7 @@
       <div class="stat-card restaurant">
         <i class="pi pi-building stat-icon"></i>
         <div class="stat-content">
-          <h3>{{ resumen.totalRestaurantes }}</h3>
+          <h3>{{ restaurantesAnalytics.length }}</h3>
           <p>Restaurantes</p>
         </div>
       </div>
@@ -78,22 +78,26 @@
     </div>
   </div>
 
-  <!-- Gráficos -->
-  <div class="charts-section">
-    <div class="chart-container">
-      <canvas id="resumenChart"></canvas>
-    </div>
-    
-    <div class="chart-container">
-      <canvas id="reservasChart"></canvas>
-    </div>
+  <!-- Gráfico de Estado de Reservas -->
+  <div class="chart-single">
+    <h2 class="section-title">Estado de Reservas</h2>
+    <canvas id="reservasChart"></canvas>
   </div>
 
+  <!-- Análisis de Restaurantes -->
   <div class="chart-full">
+    <h2 class="section-title">Análisis Comparativo de Restaurantes</h2>
     <canvas id="restaurantesChart"></canvas>
   </div>
 
+  <!-- Predicción de Visitas con Función de Ajuste -->
   <div class="chart-full">
+    <h2 class="section-title">Análisis de Tendencias y Predicción de Visitas</h2>
+    <p class="chart-description">
+      <strong>Gráfico de dispersión de puntos</strong> que muestra las visitas/reservas históricas por restaurante. 
+      La línea punteada representa la <strong>función de ajuste</strong> calculada mediante regresión que mejor se acopla a los puntos. 
+      Los puntos con <strong>estrella dorada</strong> indican la predicción de visitas futuras basada en esta función.
+    </p>
     <canvas id="tendenciasChart"></canvas>
   </div>
 
@@ -124,10 +128,11 @@
 
   <!-- Predicciones -->
   <div class="predictions-section">
-    <h2 class="section-title">Predicciones y Tendencias</h2>
+    <h2 class="section-title">Predicciones de Crecimiento por Restaurante</h2>
+    <p class="section-description">Estimaciones basadas en análisis de regresión lineal</p>
     
     <div class="predictions-grid">
-      <div *ngFor="let tendencia of tendencias.slice(0, 4)" class="prediction-card">
+      <div *ngFor="let tendencia of tendencias" class="prediction-card">
         <h4>{{ tendencia.nombreRestaurante }}</h4>
         <div class="prediction-data">
           <span class="prediction-month">{{ tendencia.prediccion.nombreMesSiguiente }}</span>
